@@ -1,31 +1,98 @@
 import 'package:flutter/material.dart';
-import 'responsive.dart';
+import '../design/design_system.dart';
 
-// Centralized theme definitions. Keep colors and typography here.
-ThemeData buildLightTheme(BuildContext context) {
-  final textTheme = Theme.of(context).textTheme;
-  return ThemeData(
+/// App theme provider for Vexora.
+///
+/// This file ties the visual design tokens into the Material theme.
+class VexoraTheme {
+  VexoraTheme._();
+
+  static final ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
-    colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
     useMaterial3: true,
-    textTheme: textTheme.apply(fontFamily: 'Roboto'),
+    scaffoldBackgroundColor: VexoraColors.background,
+    cardColor: VexoraColors.surface,
+    canvasColor: VexoraColors.background,
+    colorScheme: const ColorScheme.dark().copyWith(
+      primary: VexoraColors.accent,
+      background: VexoraColors.background,
+      surface: VexoraColors.surface,
+      onPrimary: VexoraColors.background,
+      onSurface: VexoraColors.textPrimary,
+    ),
+    appBarTheme: AppBarTheme(
+      backgroundColor: VexoraColors.surface,
+      elevation: 0,
+      centerTitle: true,
+      titleTextStyle: VexoraTypography.heading2(VexoraColors.textPrimary),
+    ),
+    textTheme: TextTheme(
+      headlineLarge: VexoraTypography.heading1(VexoraColors.textPrimary),
+      headlineMedium: VexoraTypography.heading2(VexoraColors.textPrimary),
+      bodyLarge: VexoraTypography.bodyLarge(VexoraColors.textPrimary),
+      bodyMedium: VexoraTypography.body(VexoraColors.textSecondary),
+      labelLarge: VexoraTypography.label(VexoraColors.textSecondary),
+      labelSmall: VexoraTypography.caption(VexoraColors.textSecondary),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        foregroundColor: VexoraColors.background,
+        backgroundColor: VexoraColors.accent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+    ),
+    visualDensity: VisualDensity.adaptivePlatformDensity,
   );
-}
 
-ThemeData buildDarkTheme(BuildContext context) {
-  final textTheme = Theme.of(context).textTheme;
-  return ThemeData(
+  static final ThemeData darkTheme = ThemeData(
     brightness: Brightness.dark,
-    colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo, brightness: Brightness.dark),
     useMaterial3: true,
-    textTheme: textTheme.apply(fontFamily: 'Roboto'),
+    scaffoldBackgroundColor: VexoraColors.background,
+    cardColor: VexoraColors.surface,
+    canvasColor: VexoraColors.background,
+    colorScheme: const ColorScheme.dark().copyWith(
+      primary: VexoraColors.accent,
+      background: VexoraColors.background,
+      surface: VexoraColors.surface,
+      onPrimary: VexoraColors.background,
+      onSurface: VexoraColors.textPrimary,
+    ),
+    appBarTheme: AppBarTheme(
+      backgroundColor: VexoraColors.surfaceAlt,
+      elevation: 0,
+      centerTitle: true,
+      titleTextStyle: VexoraTypography.heading2(VexoraColors.textPrimary),
+    ),
+    textTheme: TextTheme(
+      headlineLarge: VexoraTypography.heading1(VexoraColors.textPrimary),
+      headlineMedium: VexoraTypography.heading2(VexoraColors.textPrimary),
+      bodyLarge: VexoraTypography.bodyLarge(VexoraColors.textPrimary),
+      bodyMedium: VexoraTypography.body(VexoraColors.textSecondary),
+      labelLarge: VexoraTypography.label(VexoraColors.textSecondary),
+      labelSmall: VexoraTypography.caption(VexoraColors.textSecondary),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        foregroundColor: VexoraColors.background,
+        backgroundColor: VexoraColors.accent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+    ),
+    visualDensity: VisualDensity.adaptivePlatformDensity,
   );
 }
 
-// Example helper: scale text size based on device width using Responsive helper.
-double scaledFontSize(BuildContext context, double base) {
-  final width = Responsive.width(context);
-  if (width < 360) return base * 0.9;
-  if (width > 720) return base * 1.2;
-  return base;
+/// Helper to create a subtle, future-forward glow effect.
+Decoration buildNeonBorder() {
+  return BoxDecoration(
+    border: Border.all(color: VexoraColors.accent.withOpacity(0.25), width: 1.2),
+    boxShadow: [
+      BoxShadow(
+        color: VexoraColors.accent.withOpacity(0.10),
+        blurRadius: 22,
+        spreadRadius: 1,
+      ),
+    ],
+    borderRadius: BorderRadius.circular(28),
+  );
 }

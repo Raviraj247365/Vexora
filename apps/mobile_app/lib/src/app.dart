@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'core/theme.dart';
-import 'features/splash/splash_page.dart';
-import 'features/onboarding/onboarding_page.dart';
 import 'features/home/home_page.dart';
+import 'features/onboarding/onboarding_page.dart';
 import 'features/settings/theme_provider.dart';
+import 'features/splash/splash_page.dart';
 
 /// `VexoraApp` composes the app routing and theme.
 ///
@@ -32,8 +32,8 @@ class VexoraApp extends ConsumerWidget {
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'Vexora',
-      theme: buildLightTheme(context),
-      darkTheme: buildDarkTheme(context),
+      theme: VexoraTheme.lightTheme,
+      darkTheme: VexoraTheme.darkTheme,
       themeMode: themeMode,
       routerConfig: router,
     );
