@@ -7,6 +7,7 @@ import 'features/home/home_page.dart';
 import 'features/onboarding/onboarding_page.dart';
 import 'features/settings/theme_provider.dart';
 import 'features/splash/splash_page.dart';
+import 'features/styleguide/styleguide_page.dart';
 
 /// `VexoraApp` composes the app routing and theme.
 ///
@@ -26,6 +27,7 @@ class VexoraApp extends ConsumerWidget {
         GoRoute(path: '/', builder: (context, state) => const SplashPage()),
         GoRoute(path: '/onboarding', builder: (context, state) => const OnboardingPage()),
         GoRoute(path: '/home', builder: (context, state) => const HomePage()),
+        GoRoute(path: '/styleguide', builder: (context, state) => const StyleGuidePage()),
       ],
     );
 

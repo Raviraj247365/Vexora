@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../design/design_system.dart';
 import '../settings/theme_provider.dart';
 
@@ -66,6 +67,12 @@ class HomePage extends ConsumerWidget {
                       ),
                       const SizedBox(height: VexoraSpacing.lg),
                       const VexoraLoadingIndicator(message: 'Syncing presets...'),
+                      const SizedBox(height: VexoraSpacing.lg),
+                      VexoraButton(
+                        label: 'Open style guide',
+                        variant: ButtonVariant.ghost,
+                        onPressed: () => GoRouter.of(context).go('/styleguide'),
+                      ),
                     ],
                   ),
                 ),
