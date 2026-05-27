@@ -1,0 +1,24 @@
+# OS
+Thumbs.db
+.DS_Store
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# Flutter
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+ios/Flutter/.last_build_id
+
+# Misc
+.env
+.env.local
+*.sqlite

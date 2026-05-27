@@ -1,0 +1,14 @@
+{
+  "name": "vexora-backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./src/index.js",
+    "dev": "nodemon ./src/index.js",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+  }
+}
