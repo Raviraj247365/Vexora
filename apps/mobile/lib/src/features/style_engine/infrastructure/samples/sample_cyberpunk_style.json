@@ -1,0 +1,54 @@
+{
+  "version": "1.0.0",
+  "author": "Vexora Studio",
+  "previewUrl": "https://vexora.app/previews/cyberpunk.mp4",
+  "style": {
+    "id": "style_cyberpunk_neon",
+    "name": "Neon Cyberpunk",
+    "description": "High energy, glitchy, neon-lit edits perfect for nighttime or sci-fi themes.",
+    "allowedEffects": [
+      {
+        "id": "fx_vhs_glitch",
+        "name": "VHS Glitch",
+        "category": "retro",
+        "parameters": {
+          "intensity": 0.9,
+          "scanlines": true
+        }
+      },
+      {
+        "id": "fx_chromatic_aberration",
+        "name": "Chromatic Aberration",
+        "category": "distortion",
+        "parameters": {
+          "offset": 0.08,
+          "angle": 45.0
+        }
+      }
+    ],
+    "allowedTransitions": [
+      {
+        "id": "tr_whip_pan",
+        "name": "Whip Pan",
+        "defaultDurationMs": 300,
+        "requiresOverlap": false,
+        "easingCurve": "ease-out"
+      }
+    ],
+    "defaultCaptionStyle": {
+      "id": "cap_neon",
+      "name": "Neon Bold",
+      "fontFamily": "Inter",
+      "fontSize": 32.0,
+      "primaryColorHex": "#FFFFFF",
+      "highlightColorHex": "#00E5FF",
+      "animationType": "pop",
+      "uppercase": true
+    },
+    "pacingRules": {
+      "cutsPerMinute": 40.0,
+      "beatMatchingIntensity": 1.0
+    },
+    "lutReference": "assets/luts/cyber_neon.cube"
+  }
+}

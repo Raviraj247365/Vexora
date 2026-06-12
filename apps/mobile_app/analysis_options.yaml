@@ -1,6 +1,0 @@
-include: package:flutter_lints/flutter.yaml
-
-analyzer:
-  errors:
-    # Keep analyzer warnings default for now; teams can tighten rules later.
-    avoid_print: warning

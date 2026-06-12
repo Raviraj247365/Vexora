@@ -33,5 +33,26 @@ services:
       - "9099:9099" # auth emulator
       - "9199:9199" # storage emulator
 
+  backend:
+    build:
+      context: ./apps/backend
+    ports:
+      - "3000:3000"
+    env_file:
+      - apps/backend/.env
+    depends_on:
+      - postgres
+      - firebase-emulator
+
+  ai-service:
+    build:
+      context: ./services/ai
+    ports:
+      - "8001:8001"
+    env_file:
+      - services/ai/.env
+    depends_on:
+      - firebase-emulator
+
 volumes:
   postgres-data:

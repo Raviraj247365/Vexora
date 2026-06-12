@@ -1,6 +1,6 @@
 FROM node:18-alpine
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --silent || true
+RUN npm install --production --silent
 COPY . .
 CMD ["npm", "start"]
