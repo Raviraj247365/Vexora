@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 Vexora
 ======
 
@@ -88,3 +89,7 @@ Git workflow
 - Use commit prefixes like `feat:`, `fix:`, `chore:`, `docs:`.
 
 Need more details? See `CONTRIBUTING.md` and the `docs/` folder.
+=======
+# Vexora
+Vexora is the future of vedio editing people will learn and edit videos in less time
+>>>>>>> 4a07edf0197fbc30dbb1f278c6712dbae40ada00
