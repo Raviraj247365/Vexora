@@ -3,6 +3,11 @@
 ## [Unreleased]
 
 ### Added
+- **Phase 5B (Style DNA Influence)**:
+  - `StyleBiasMatrix` and `StyleDNAMapper` to deterministically scale AI Director generation from Style DNA.
+  - `BlueprintStyleHints` to persist style metadata in the generated `EditBlueprint`.
+  - `StyleApplicationService` to orchestrate end-to-end Style DNA application.
+  - Test suite validating that fitness/travel styles demonstrably change cut frequencies and transitions deterministically.
 - Developer Dashboard: Created a complete visual verification layer for checking all AI pipeline features.
 - Pipeline Flow Widget: Visualized the 5-stage Vexora AI processing chain (Video Intelligence → Creator Intent → AI Director → Timeline Engine → Style DNA).
 - Demo Data: Created mock datasets to simulate realistic outputs for all features.

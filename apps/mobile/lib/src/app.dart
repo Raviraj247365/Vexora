@@ -2,10 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'core/theme.dart';
+import 'design_system/design_system.dart';
+import 'features/shell/app_shell.dart';
 import 'features/home/home_page.dart';
 import 'features/onboarding/onboarding_page.dart';
-import 'features/settings/theme_provider.dart';
 import 'features/splash/splash_page.dart';
 import 'features/styleguide/styleguide_page.dart';
 import 'features/video_editor/presentation/video_editor_page.dart';
@@ -17,8 +17,11 @@ import 'features/export/export_page.dart';
 import 'features/video_preview/presentation/preview_screen.dart';
 import 'features/marketplace/presentation/screens/edit_details_screen.dart';
 import 'features/marketplace/presentation/screens/creator_profile_screen.dart';
+import 'features/marketplace/presentation/screens/marketplace_page.dart';
 import 'features/marketplace/domain/marketplace_models.dart';
 import 'features/project_management/presentation/project_dashboard.dart';
+import 'features/analytics/analytics_page.dart';
+import 'features/profile/profile_page.dart';
 
 /// `VexoraApp` composes the app routing and theme.
 ///
@@ -30,7 +33,6 @@ class VexoraApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeModeProvider);
 
     final router = GoRouter(
       initialLocation: '/',
@@ -39,7 +41,56 @@ class VexoraApp extends ConsumerWidget {
         GoRoute(
             path: '/onboarding',
             builder: (context, state) => const OnboardingPage()),
-        GoRoute(path: '/home', builder: (context, state) => const HomePage()),
+        
+        StatefulShellRoute.indexedStack(
+          builder: (context, state, navigationShell) {
+            return AppShell(navigationShell: navigationShell);
+          },
+          branches: [
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/home',
+                  builder: (context, state) => const HomePage(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/projects',
+                  builder: (context, state) => const ProjectDashboard(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/marketplace',
+                  builder: (context, state) => const MarketplacePage(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/analytics',
+                  builder: (context, state) => const AnalyticsPage(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/profile',
+                  builder: (context, state) => const ProfilePage(),
+                ),
+              ],
+            ),
+          ],
+        ),
+
+        // Hidden / utility routes
         GoRoute(
             path: '/styleguide',
             builder: (context, state) => const StyleGuidePage()),
@@ -63,9 +114,6 @@ class VexoraApp extends ConsumerWidget {
         GoRoute(
             path: '/export', builder: (context, state) => const ExportPage()),
         GoRoute(
-            path: '/projects',
-            builder: (context, state) => const ProjectDashboard()),
-        GoRoute(
           path: '/marketplace/details',
           builder: (context, state) =>
               EditDetailsScreen(item: state.extra as MarketplaceItem),
@@ -81,9 +129,9 @@ class VexoraApp extends ConsumerWidget {
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'Vexora',
-      theme: VexoraTheme.lightTheme,
+      theme: VexoraTheme.darkTheme,
       darkTheme: VexoraTheme.darkTheme,
-      themeMode: themeMode,
+      themeMode: ThemeMode.dark,
       routerConfig: router,
     );
   }

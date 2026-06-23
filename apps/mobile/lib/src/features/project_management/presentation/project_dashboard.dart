@@ -1,84 +1,221 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
-import '../../../design/design_system.dart';
+import '../../../design_system/design_system.dart';
 import '../domain/project_model.dart';
 import 'project_management_provider.dart';
 
-/// project_dashboard.dart
-///
-/// Full project library screen: create, rename, delete, duplicate,
-/// and open recent projects.
-class ProjectDashboard extends ConsumerWidget {
+/// Project Dashboard — Phase 6C redesign.
+/// Premium Notion/Canva-style project library.
+class ProjectDashboard extends ConsumerStatefulWidget {
   const ProjectDashboard({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProjectDashboard> createState() => _ProjectDashboardState();
+}
+
+class _ProjectDashboardState extends ConsumerState<ProjectDashboard> {
+  bool _isGridView = true;
+  String _filter = 'All';
+  final List<String> _filters = ['All', 'Draft', 'Processing', 'Published'];
+
+  @override
+  Widget build(BuildContext context) {
     final projectsAsync = ref.watch(projectManagementProvider);
 
     return Scaffold(
       backgroundColor: VexoraColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              color: VexoraColors.textSecondary, size: 20),
-          onPressed: () => context.pop(),
-        ),
-        title: Text('Projects',
-            style: VexoraTypography.heading2(VexoraColors.textPrimary)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: VexoraColors.accent),
-            onPressed: () =>
-                ref.read(projectManagementProvider.notifier).refresh(),
+      body: NestedScrollView(
+        headerSliverBuilder: (context, _) => [
+          SliverAppBar(
+            backgroundColor: VexoraColors.background,
+            floating: true,
+            snap: true,
+            elevation: 0,
+            leading: const SizedBox.shrink(),
+            leadingWidth: 0,
+            title: const Text('Projects',
+                style: TextStyle(
+                  color: VexoraColors.textPrimary,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                )),
+            actions: [
+              IconButton(
+                icon: Icon(
+                  _isGridView ? Icons.view_list_outlined : Icons.grid_view,
+                  color: VexoraColors.textSecondary,
+                ),
+                onPressed: () => setState(() => _isGridView = !_isGridView),
+              ),
+              const SizedBox(width: VexoraSpacing.sm),
+            ],
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(48),
+              child: _buildFilterBar(),
+            ),
           ),
         ],
+        body: projectsAsync.when(
+          loading: () => _buildSkeletonGrid(),
+          error: (e, _) => Center(
+            child: Text('Error: $e', style: VexoraTypography.body),
+          ),
+          data: (projects) {
+            final filtered = _filter == 'All'
+                ? projects
+                : projects
+                    .where((p) {
+                      final st = _derivedStatus(p.progress);
+                      return st.toLowerCase() == _filter.toLowerCase();
+                    })
+                    .toList();
+
+            if (filtered.isEmpty) {
+              return EmptyState(
+                icon: Icons.folder_open_outlined,
+                title: 'No projects yet',
+                subtitle:
+                    'Tap the button below to create your first AI-powered video.',
+                actionLabel: 'Create Project',
+                onAction: () => _createProject(context, ref),
+              );
+            }
+
+            if (_isGridView) {
+              return _buildGrid(context, ref, filtered);
+            }
+            return _buildList(context, ref, filtered);
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _createProject(context, ref),
-        backgroundColor: VexoraColors.accent,
+        backgroundColor: VexoraColors.primary,
+        elevation: 0,
         icon: const Icon(Icons.add, color: Colors.white),
-        label: Text('New Project',
-            style: VexoraTypography.label(Colors.white)),
-      ),
-      body: Container(
-        decoration: BoxDecoration(gradient: VexoraColors.ambientGradient),
-        child: projectsAsync.when(
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: VexoraColors.accent),
+        label: const Text(
+          'New Project',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
           ),
-          error: (err, _) => Center(
-            child: Text('Failed to load projects: $err',
-                style: VexoraTypography.body(Colors.redAccent)),
-          ),
-          data: (projects) {
-            if (projects.isEmpty) {
-              return _EmptyProjects(onCreate: () => _createProject(context, ref));
-            }
-            return ListView.separated(
-              padding: const EdgeInsets.all(VexoraSpacing.lg),
-              itemCount: projects.length,
-              separatorBuilder: (_, __) =>
-                  const SizedBox(height: VexoraSpacing.sm),
-              itemBuilder: (context, index) {
-                final project = projects[index];
-                return _ProjectListTile(
-                  project: project,
-                  onOpen: () => _openProject(context, ref, project),
-                  onRename: () => _renameProject(context, ref, project),
-                  onDuplicate: () => _duplicateProject(context, ref, project),
-                  onDelete: () => _deleteProject(context, ref, project),
-                );
-              },
-            );
-          },
         ),
       ),
     );
   }
+
+  Widget _buildFilterBar() {
+    return SizedBox(
+      height: 48,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(
+            horizontal: VexoraSpacing.lg, vertical: VexoraSpacing.xs),
+        scrollDirection: Axis.horizontal,
+        itemCount: _filters.length,
+        separatorBuilder: (_, __) => const SizedBox(width: VexoraSpacing.xs),
+        itemBuilder: (context, i) {
+          final isSelected = _filters[i] == _filter;
+          return GestureDetector(
+            onTap: () => setState(() => _filter = _filters[i]),
+            child: AnimatedContainer(
+              duration: VexoraAnimations.fast,
+              padding: const EdgeInsets.symmetric(
+                  horizontal: VexoraSpacing.md, vertical: 6),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? VexoraColors.primary
+                    : VexoraColors.surfaceElevated,
+                borderRadius: VexoraRadius.xxlBorder,
+                border: Border.all(
+                  color: isSelected
+                      ? VexoraColors.primary
+                      : VexoraColors.border,
+                ),
+              ),
+              child: Text(
+                _filters[i],
+                style: TextStyle(
+                  color: isSelected
+                      ? Colors.white
+                      : VexoraColors.textSecondary,
+                  fontSize: 13,
+                  fontWeight:
+                      isSelected ? FontWeight.w600 : FontWeight.w400,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildGrid(
+      BuildContext context, WidgetRef ref, List<ProjectModel> projects) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(VexoraSpacing.lg),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: MediaQuery.of(context).size.width > 800 ? 4 : 2,
+        crossAxisSpacing: VexoraSpacing.sm,
+        mainAxisSpacing: VexoraSpacing.sm,
+        childAspectRatio: 0.82,
+      ),
+      itemCount: projects.length,
+      itemBuilder: (context, i) {
+        final p = projects[i];
+        return ProjectCard(
+          title: p.title,
+          duration: '${p.clipCount} clips',
+          status: _derivedStatus(p.progress),
+          onTap: () => _openProject(context, ref, p),
+        );
+      },
+    );
+  }
+
+  Widget _buildList(
+      BuildContext context, WidgetRef ref, List<ProjectModel> projects) {
+    return ListView.separated(
+      padding: const EdgeInsets.all(VexoraSpacing.lg),
+      itemCount: projects.length,
+      separatorBuilder: (_, __) => const SizedBox(height: VexoraSpacing.sm),
+      itemBuilder: (context, i) {
+        final p = projects[i];
+        return _ProjectListRow(
+          project: p,
+          onOpen: () => _openProject(context, ref, p),
+          onRename: () => _renameProject(context, ref, p),
+          onDuplicate: () => _duplicateProject(context, ref, p),
+          onDelete: () => _deleteProject(context, ref, p),
+        );
+      },
+    );
+  }
+
+  Widget _buildSkeletonGrid() {
+    return GridView.builder(
+      padding: const EdgeInsets.all(VexoraSpacing.lg),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: VexoraSpacing.sm,
+        mainAxisSpacing: VexoraSpacing.sm,
+        childAspectRatio: 0.82,
+      ),
+      itemCount: 6,
+      itemBuilder: (_, __) => const LoadingSkeleton(height: 200),
+    );
+  }
+
+  // ─── Helpers ────────────────────────────────────────────────────────
+
+  String _derivedStatus(double progress) {
+    if (progress >= 1.0) return 'Published';
+    if (progress >= 0.5) return 'Processing';
+    return 'Draft';
+  }
+
+  // ─── Actions ────────────────────────────────────────────────────────
 
   Future<void> _createProject(BuildContext context, WidgetRef ref) async {
     final project =
@@ -88,64 +225,56 @@ class ProjectDashboard extends ConsumerWidget {
   }
 
   Future<void> _openProject(
-    BuildContext context,
-    WidgetRef ref,
-    ProjectModel project,
-  ) async {
-    await ref.read(projectManagementProvider.notifier).openProject(project.id);
+      BuildContext context, WidgetRef ref, ProjectModel project) async {
+    await ref
+        .read(projectManagementProvider.notifier)
+        .openProject(project.id);
     if (context.mounted) context.push('/import');
   }
 
   Future<void> _renameProject(
-    BuildContext context,
-    WidgetRef ref,
-    ProjectModel project,
-  ) async {
+      BuildContext context, WidgetRef ref, ProjectModel project) async {
     final controller = TextEditingController(text: project.title);
     final newTitle = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: VexoraColors.surface,
-        title: Text('Rename project',
-            style: VexoraTypography.heading2(VexoraColors.textPrimary)),
+        backgroundColor: VexoraColors.surfaceElevated,
+        shape: RoundedRectangleBorder(borderRadius: VexoraRadius.lgBorder),
+        title: const Text('Rename project',
+            style: TextStyle(
+                color: VexoraColors.textPrimary,
+                fontWeight: FontWeight.w600)),
         content: TextField(
           controller: controller,
           autofocus: true,
-          style: VexoraTypography.body(VexoraColors.textPrimary),
-          decoration: InputDecoration(
+          style: const TextStyle(color: VexoraColors.textPrimary),
+          decoration: const InputDecoration(
             hintText: 'Project name',
-            hintStyle: VexoraTypography.body(VexoraColors.textSecondary),
+            hintStyle: TextStyle(color: VexoraColors.textTertiary),
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel',
-                style: VexoraTypography.label(VexoraColors.textSecondary)),
-          ),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel',
+                  style: TextStyle(color: VexoraColors.textSecondary))),
           TextButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: Text('Save',
-                style: VexoraTypography.label(VexoraColors.accent)),
-          ),
+              onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+              child: const Text('Save',
+                  style: TextStyle(color: VexoraColors.primary))),
         ],
       ),
     );
-
     if (newTitle == null || newTitle.isEmpty || newTitle == project.title) {
       return;
     }
-
     await ref
         .read(projectManagementProvider.notifier)
         .renameProject(project.id, newTitle);
   }
 
   Future<void> _duplicateProject(
-    BuildContext context,
-    WidgetRef ref,
-    ProjectModel project,
-  ) async {
+      BuildContext context, WidgetRef ref, ProjectModel project) async {
     await ref
         .read(projectManagementProvider.notifier)
         .duplicateProject(project.id);
@@ -153,43 +282,42 @@ class ProjectDashboard extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Duplicated "${project.title}"',
-              style: VexoraTypography.body(VexoraColors.textPrimary)),
-          backgroundColor: VexoraColors.surfaceAlt,
+              style: const TextStyle(color: VexoraColors.textPrimary)),
+          backgroundColor: VexoraColors.surfaceElevated,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: VexoraRadius.mdBorder),
         ),
       );
     }
   }
 
   Future<void> _deleteProject(
-    BuildContext context,
-    WidgetRef ref,
-    ProjectModel project,
-  ) async {
+      BuildContext context, WidgetRef ref, ProjectModel project) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: VexoraColors.surface,
-        title: Text('Delete project?',
-            style: VexoraTypography.heading2(VexoraColors.textPrimary)),
+        backgroundColor: VexoraColors.surfaceElevated,
+        shape: RoundedRectangleBorder(borderRadius: VexoraRadius.lgBorder),
+        title: const Text('Delete project?',
+            style: TextStyle(
+                color: VexoraColors.textPrimary,
+                fontWeight: FontWeight.w600)),
         content: Text(
-          '“${project.title}” will be permanently removed.',
-          style: VexoraTypography.body(VexoraColors.textSecondary),
+          '"${project.title}" will be permanently removed.',
+          style: const TextStyle(color: VexoraColors.textSecondary),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel',
-                style: VexoraTypography.label(VexoraColors.textSecondary)),
-          ),
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel',
+                  style: TextStyle(color: VexoraColors.textSecondary))),
           TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Delete',
-                style: VexoraTypography.label(Colors.redAccent)),
-          ),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Delete',
+                  style: TextStyle(color: VexoraColors.error))),
         ],
       ),
     );
-
     if (confirmed == true) {
       await ref
           .read(projectManagementProvider.notifier)
@@ -198,51 +326,16 @@ class ProjectDashboard extends ConsumerWidget {
   }
 }
 
-class _EmptyProjects extends StatelessWidget {
-  final VoidCallback onCreate;
+// ─────────────────────────────── List Row ─────────────────────────────────
 
-  const _EmptyProjects({required this.onCreate});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(VexoraSpacing.xl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.folder_open_outlined,
-                size: 64, color: VexoraColors.textSecondary.withOpacity(0.5)),
-            const SizedBox(height: VexoraSpacing.md),
-            Text('No projects yet',
-                style: VexoraTypography.heading2(VexoraColors.textPrimary)),
-            const SizedBox(height: VexoraSpacing.sm),
-            Text(
-              'Create your first reel to get started.',
-              textAlign: TextAlign.center,
-              style: VexoraTypography.body(VexoraColors.textSecondary),
-            ),
-            const SizedBox(height: VexoraSpacing.lg),
-            VexoraButton(
-              label: 'Create Project',
-              onPressed: onCreate,
-              variant: ButtonVariant.primary,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ProjectListTile extends StatelessWidget {
+class _ProjectListRow extends StatefulWidget {
   final ProjectModel project;
   final VoidCallback onOpen;
   final VoidCallback onRename;
   final VoidCallback onDuplicate;
   final VoidCallback onDelete;
 
-  const _ProjectListTile({
+  const _ProjectListRow({
     required this.project,
     required this.onOpen,
     required this.onRename,
@@ -251,49 +344,67 @@ class _ProjectListTile extends StatelessWidget {
   });
 
   @override
+  State<_ProjectListRow> createState() => _ProjectListRowState();
+}
+
+class _ProjectListRowState extends State<_ProjectListRow> {
+  bool _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    return VexoraCard(
-      child: InkWell(
-        onTap: onOpen,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onOpen,
+        child: AnimatedContainer(
+          duration: VexoraAnimations.fast,
           padding: const EdgeInsets.all(VexoraSpacing.md),
+          decoration: BoxDecoration(
+            color: _hovered
+                ? VexoraColors.surfaceHighlight
+                : VexoraColors.surfaceElevated,
+            borderRadius: VexoraRadius.lgBorder,
+            border: Border.all(
+              color: _hovered
+                  ? VexoraColors.primary.withOpacity(0.3)
+                  : VexoraColors.border,
+            ),
+          ),
           child: Row(
             children: [
               Container(
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: VexoraColors.accent.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
+                  color: VexoraColors.primary.withOpacity(0.12),
+                  borderRadius: VexoraRadius.mdBorder,
                 ),
                 child: const Icon(Icons.movie_creation_outlined,
-                    color: VexoraColors.accent),
+                    color: VexoraColors.primary, size: 20),
               ),
               const SizedBox(width: VexoraSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(project.title,
-                        style: VexoraTypography.bodyLarge(
-                            VexoraColors.textPrimary)),
+                    Text(widget.project.title,
+                        style: VexoraTypography.bodyStrong),
                     const SizedBox(height: 4),
                     Text(
-                      '${project.assetCount} assets · ${project.clipCount} clips · '
-                      '${(project.progress * 100).round()}% complete',
-                      style: VexoraTypography.caption(
-                          VexoraColors.textSecondary),
+                      '${widget.project.clipCount} clips · '
+                      '${(widget.project.progress * 100).round()}% complete',
+                      style: VexoraTypography.caption,
                     ),
-                    const SizedBox(height: VexoraSpacing.sm),
+                    const SizedBox(height: 6),
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: VexoraRadius.smBorder,
                       child: LinearProgressIndicator(
-                        value: project.progress,
-                        minHeight: 4,
-                        backgroundColor: VexoraColors.surfaceAlt,
+                        value: widget.project.progress,
+                        minHeight: 3,
+                        backgroundColor: VexoraColors.surface,
                         valueColor: const AlwaysStoppedAnimation(
-                            VexoraColors.accent),
+                            VexoraColors.primary),
                       ),
                     ),
                   ],
@@ -301,36 +412,30 @@ class _ProjectListTile extends StatelessWidget {
               ),
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert,
-                    color: VexoraColors.textSecondary),
-                color: VexoraColors.surface,
-                onSelected: (value) {
-                  switch (value) {
-                    case 'rename':
-                      onRename();
-                    case 'duplicate':
-                      onDuplicate();
-                    case 'delete':
-                      onDelete();
-                  }
+                    color: VexoraColors.textTertiary, size: 20),
+                color: VexoraColors.surfaceElevated,
+                shape: RoundedRectangleBorder(
+                    borderRadius: VexoraRadius.lgBorder),
+                onSelected: (v) {
+                  if (v == 'rename') widget.onRename();
+                  if (v == 'duplicate') widget.onDuplicate();
+                  if (v == 'delete') widget.onDelete();
                 },
                 itemBuilder: (_) => [
-                  PopupMenuItem(
-                    value: 'rename',
-                    child: Text('Rename',
-                        style: VexoraTypography.body(
-                            VexoraColors.textPrimary)),
-                  ),
-                  PopupMenuItem(
-                    value: 'duplicate',
-                    child: Text('Duplicate',
-                        style: VexoraTypography.body(
-                            VexoraColors.textPrimary)),
-                  ),
-                  PopupMenuItem(
-                    value: 'delete',
-                    child: Text('Delete',
-                        style: VexoraTypography.body(Colors.redAccent)),
-                  ),
+                  const PopupMenuItem(
+                      value: 'rename',
+                      child: Text('Rename',
+                          style:
+                              TextStyle(color: VexoraColors.textPrimary))),
+                  const PopupMenuItem(
+                      value: 'duplicate',
+                      child: Text('Duplicate',
+                          style:
+                              TextStyle(color: VexoraColors.textPrimary))),
+                  const PopupMenuItem(
+                      value: 'delete',
+                      child: Text('Delete',
+                          style: TextStyle(color: VexoraColors.error))),
                 ],
               ),
             ],

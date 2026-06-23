@@ -1,5 +1,6 @@
 import '../video_intelligence/domain/intelligence_report.dart';
 import '../project_schema/project_schema.dart';
+import '../style_dna/style_dna.dart';
 import 'creator_intent.dart';
 import 'creator_intent_engine.dart';
 
@@ -85,6 +86,7 @@ class DefaultCreatorIntentEngine implements CreatorIntentEngine {
     String prompt, {
     IntelligenceReport? intelligenceReport,
     ProjectSchema? projectSchema,
+    StyleDNA? preferredStyle,
   }) {
     // 1. Detect category from keywords
     final category = _detectCategory(prompt);
@@ -104,6 +106,7 @@ class DefaultCreatorIntentEngine implements CreatorIntentEngine {
       category: category,
       style: style,
       keywords: keywords,
+      preferredStyle: preferredStyle,
     );
   }
 

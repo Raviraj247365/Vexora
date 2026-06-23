@@ -1,3 +1,5 @@
+import '../style_dna/style_dna.dart';
+
 /// creator_intent.dart
 ///
 /// Pure domain model for creator intent parsing.
@@ -7,12 +9,14 @@ class CreatorIntent {
   final String category;
   final String style;
   final List<String> keywords;
+  final StyleDNA? preferredStyle;
 
   const CreatorIntent({
     required this.prompt,
     required this.category,
     required this.style,
     this.keywords = const [],
+    this.preferredStyle,
   });
 
   Map<String, dynamic> toJson() => {
@@ -20,6 +24,7 @@ class CreatorIntent {
         'category': category,
         'style': style,
         'keywords': keywords,
+        if (preferredStyle != null) 'preferredStyle': preferredStyle!.toJson(),
       };
 
   factory CreatorIntent.fromJson(Map<String, dynamic> json) => CreatorIntent(
@@ -28,5 +33,8 @@ class CreatorIntent {
         style: json['style'] as String,
         keywords:
             (json['keywords'] as List<dynamic>?)?.cast<String>() ?? const [],
+        preferredStyle: json['preferredStyle'] != null
+            ? StyleDNA.fromJson(json['preferredStyle'] as Map<String, dynamic>)
+            : null,
       );
 }

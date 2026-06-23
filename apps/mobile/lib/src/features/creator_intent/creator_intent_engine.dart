@@ -1,5 +1,6 @@
 import '../project_schema/project_schema.dart';
 import '../video_intelligence/domain/intelligence_report.dart';
+import '../style_dna/style_dna.dart';
 import 'creator_intent.dart';
 
 /// creator_intent_engine.dart
@@ -14,5 +15,6 @@ abstract class CreatorIntentEngine {
     String prompt, {
     IntelligenceReport? intelligenceReport,
     ProjectSchema? projectSchema,
+    StyleDNA? preferredStyle,
   });
 }

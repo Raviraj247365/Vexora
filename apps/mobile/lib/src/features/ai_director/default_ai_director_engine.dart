@@ -5,7 +5,9 @@ import '../creator_intent/creator_intent.dart';
 import '../video_intelligence/domain/intelligence_report.dart';
 import '../project_schema/project_schema.dart';
 import '../timeline_engine/domain/timeline_operation.dart';
+import '../style_dna/application/style_bias_matrix.dart';
 import 'ai_director_engine.dart';
+import 'blueprint_style_hints.dart';
 import 'edit_blueprint.dart';
 
 /// default_ai_director_engine.dart
@@ -31,6 +33,7 @@ class DefaultAIDirectorEngine implements AIDirectorEngine {
     required CreatorIntent intent,
     required IntelligenceReport intelligenceReport,
     required ProjectSchema projectSchema,
+    StyleBiasMatrix? styleBiasMatrix,
   }) {
     final operations = <TimelineOperation>[];
     final confidenceScores = <double>[];
@@ -39,6 +42,7 @@ class DefaultAIDirectorEngine implements AIDirectorEngine {
     final sceneOps = _generateSceneOperations(
       intelligenceReport.scenes,
       intent,
+      styleBiasMatrix,
     );
     operations.addAll(sceneOps);
     confidenceScores.addAll(sceneOps.map((op) => op.confidence));
@@ -47,6 +51,7 @@ class DefaultAIDirectorEngine implements AIDirectorEngine {
     final beatOps = _generateBeatOperations(
       intelligenceReport.beats,
       intent,
+      styleBiasMatrix,
     );
     operations.addAll(beatOps);
     confidenceScores.addAll(beatOps.map((op) => op.confidence));
@@ -55,6 +60,7 @@ class DefaultAIDirectorEngine implements AIDirectorEngine {
     final speechOps = _generateSpeechOperations(
       intelligenceReport.speech,
       intent,
+      styleBiasMatrix,
     );
     operations.addAll(speechOps);
     confidenceScores.addAll(speechOps.map((op) => op.confidence));
@@ -63,6 +69,7 @@ class DefaultAIDirectorEngine implements AIDirectorEngine {
     final highlightOps = _generateHighlightOperations(
       intelligenceReport.highlights,
       intent,
+      styleBiasMatrix,
     );
     operations.addAll(highlightOps);
     confidenceScores.addAll(highlightOps.map((op) => op.confidence));
@@ -72,6 +79,17 @@ class DefaultAIDirectorEngine implements AIDirectorEngine {
         ? 0.0
         : confidenceScores.reduce((a, b) => a + b) / confidenceScores.length;
 
+    BlueprintStyleHints? styleHints;
+    if (intent.preferredStyle != null) {
+      styleHints = BlueprintStyleHints(
+        pace: intent.preferredStyle!.pace,
+        transitionStyle: intent.preferredStyle!.transitionStyle,
+        zoomStyle: intent.preferredStyle!.zoomStyle,
+        captionStyle: intent.preferredStyle!.captionStyle,
+        beatSync: intent.preferredStyle!.beatSync,
+      );
+    }
+
     // 6. Create and return blueprint
     final blueprintId = uuid.v4();
     return EditBlueprint(
@@ -79,6 +97,7 @@ class DefaultAIDirectorEngine implements AIDirectorEngine {
       blueprintId: blueprintId,
       overallConfidenceScore: overallConfidence,
       operations: operations,
+      styleHints: styleHints,
     );
   }
 
@@ -89,6 +108,7 @@ class DefaultAIDirectorEngine implements AIDirectorEngine {
   List<TimelineOperation> _generateSceneOperations(
     List<dynamic> scenes,
     CreatorIntent intent,
+    StyleBiasMatrix? matrix,
   ) {
     if (scenes.isEmpty) return [];
 
@@ -107,6 +127,13 @@ class DefaultAIDirectorEngine implements AIDirectorEngine {
           confidence = (scene as dynamic).confidence ?? 0.75;
         }
       } catch (_) {}
+
+      if (matrix != null) {
+        confidence = (confidence * matrix.cutAggressiveness).clamp(0.0, 1.0);
+      }
+
+      // If matrix cut aggressiveness is very low, we might skip some cuts based on random chance or just confidence threshold.
+      if (confidence < 0.4) continue;
 
       ops.add(CutOperation(
         operationId: opId,
@@ -128,6 +155,7 @@ class DefaultAIDirectorEngine implements AIDirectorEngine {
   List<TimelineOperation> _generateBeatOperations(
     List<dynamic> beats,
     CreatorIntent intent,
+    StyleBiasMatrix? matrix,
   ) {
     if (beats.isEmpty) return [];
 
@@ -151,31 +179,47 @@ class DefaultAIDirectorEngine implements AIDirectorEngine {
       } catch (_) {}
 
       // Generate TRANSITION operation
-      if (wantTransition) {
-        ops.add(TransitionOperation(
-          operationId: 'trans-beat-$i',
-          timestamp: timestamp,
-          confidence: confidence * 0.9,
-          source: OperationSource.aiDirector,
-          beforeClipId: 'clip-${max(0, i - 1)}',
-          afterClipId: 'clip-$i',
-          transitionType: 'crossfade',
-          durationMs: 300,
-        ));
+      final actuallyWantTransition = wantTransition || (matrix != null && matrix.transitionFrequency > 1.2);
+      if (actuallyWantTransition) {
+        double transConf = confidence * 0.9;
+        if (matrix != null) {
+          transConf = (transConf * matrix.beatPriority * matrix.transitionFrequency).clamp(0.0, 1.0);
+        }
+        
+        if (transConf >= 0.4) {
+          ops.add(TransitionOperation(
+            operationId: 'trans-beat-$i',
+            timestamp: timestamp,
+            confidence: transConf,
+            source: OperationSource.aiDirector,
+            beforeClipId: 'clip-${max(0, i - 1)}',
+            afterClipId: 'clip-$i',
+            transitionType: 'crossfade',
+            durationMs: 300,
+          ));
+        }
       }
 
       // Generate ZOOM operation
-      if (wantZoom) {
-        ops.add(ZoomOperation(
-          operationId: 'zoom-beat-$i',
-          timestamp: timestamp,
-          confidence: confidence,
-          source: OperationSource.aiDirector,
-          clipId: 'clip-$i',
-          zoomFactor: 1.2,
-          zoomStartMs: beatTime,
-          zoomEndMs: beatTime + 500,
-        ));
+      final actuallyWantZoom = wantZoom || (matrix != null && matrix.zoomFrequency > 1.2);
+      if (actuallyWantZoom) {
+        double zoomConf = confidence;
+        if (matrix != null) {
+          zoomConf = (zoomConf * matrix.beatPriority * matrix.zoomFrequency).clamp(0.0, 1.0);
+        }
+
+        if (zoomConf >= 0.4) {
+          ops.add(ZoomOperation(
+            operationId: 'zoom-beat-$i',
+            timestamp: timestamp,
+            confidence: zoomConf,
+            source: OperationSource.aiDirector,
+            clipId: 'clip-$i',
+            zoomFactor: 1.2,
+            zoomStartMs: beatTime,
+            zoomEndMs: beatTime + 500,
+          ));
+        }
       }
     }
 
@@ -189,6 +233,7 @@ class DefaultAIDirectorEngine implements AIDirectorEngine {
   List<TimelineOperation> _generateSpeechOperations(
     List<dynamic> speechSegments,
     CreatorIntent intent,
+    StyleBiasMatrix? matrix,
   ) {
     if (speechSegments.isEmpty) return [];
 
@@ -196,8 +241,9 @@ class DefaultAIDirectorEngine implements AIDirectorEngine {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final wantCaption =
         intent.keywords.contains('caption') || intent.keywords.contains('text');
+    final actuallyWantCaption = wantCaption || (matrix != null && matrix.captionDensity > 1.2);
 
-    if (!wantCaption) return [];
+    if (!actuallyWantCaption) return [];
 
     for (int i = 0; i < speechSegments.length; i++) {
       final segment = speechSegments[i];
@@ -216,8 +262,12 @@ class DefaultAIDirectorEngine implements AIDirectorEngine {
         }
       } catch (_) {}
 
+      if (matrix != null) {
+        confidence = (confidence * matrix.captionDensity).clamp(0.0, 1.0);
+      }
+
       // Only add captions for actual speech (not silence)
-      if (isSpeech) {
+      if (isSpeech && confidence >= 0.4) {
         ops.add(CaptionOperation(
           operationId: 'cap-speech-$i',
           timestamp: timestamp,
@@ -242,6 +292,7 @@ class DefaultAIDirectorEngine implements AIDirectorEngine {
   List<TimelineOperation> _generateHighlightOperations(
     List<dynamic> highlights,
     CreatorIntent intent,
+    StyleBiasMatrix? matrix,
   ) {
     if (highlights.isEmpty) return [];
 
@@ -250,8 +301,9 @@ class DefaultAIDirectorEngine implements AIDirectorEngine {
     final wantEffect = intent.keywords.contains('effect') ||
         intent.keywords.contains('filter') ||
         intent.keywords.contains('highlight');
+    final actuallyWantEffect = wantEffect || (matrix != null && matrix.energyBias > 1.2);
 
-    if (!wantEffect) return [];
+    if (!actuallyWantEffect) return [];
 
     for (int i = 0; i < highlights.length; i++) {
       final highlight = highlights[i];
@@ -265,6 +317,10 @@ class DefaultAIDirectorEngine implements AIDirectorEngine {
           highlightTime = (highlight as dynamic).timestamp ?? 0;
         }
       } catch (_) {}
+
+      if (matrix != null) {
+        score = (score * matrix.energyBias * matrix.motionPreference).clamp(0.0, 1.0);
+      }
 
       // Only generate filters for high-confidence highlights
       if (score >= 0.6) {

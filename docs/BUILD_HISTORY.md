@@ -4,6 +4,33 @@ This document tracks all implemented features, changes, and their impact over ti
 
 ---
 
+**Date:** 2026-06-13
+**Feature:** Phase 5B — Style DNA Influence Layer
+**Files Changed:**
+- `apps/mobile/lib/src/features/style_dna/application/style_bias_matrix.dart` (New)
+- `apps/mobile/lib/src/features/style_dna/application/style_dna_mapper.dart` (New)
+- `apps/mobile/lib/src/features/style_dna/application/style_application_service.dart` (New)
+- `apps/mobile/lib/src/features/creator_intent/creator_intent.dart`
+- `apps/mobile/lib/src/features/ai_director/blueprint_style_hints.dart` (New)
+- `apps/mobile/lib/src/features/ai_director/edit_blueprint.dart`
+- `apps/mobile/lib/src/features/ai_director/default_ai_director_engine.dart`
+- `apps/mobile/test/features/style_dna/style_influence_test.dart` (New)
+- `docs/project_brain.md`
+- `docs/changelog.md`
+- `docs/BUILD_HISTORY.md`
+**Purpose:** Deterministically scale AI Director generation heuristics using Style DNA biases without mutating Timeline directly.
+**Architecture Changes:**
+- Mapped Style DNA to an immutable `StyleBiasMatrix` containing 0.0-1.0 multipliers.
+- Updated CreatorIntent to persist `preferredStyle`.
+- Injected `StyleBiasMatrix` into `DefaultAIDirectorEngine` and multiplied confidence thresholds and iteration rates.
+- Introduced `StyleApplicationService` as the orchestrator to wrap intelligence + style + intent -> blueprint.
+**Test Coverage:**
+- 7 integration tests covering deterministic output and influence scaling (cuts, transitions, captions, beat sync).
+**Risks:**
+- Modifying bias scaling could drastically alter edit outcomes across templates. Scaling bounds strictly clamped to 0.0 and 1.0.
+
+---
+
 **Date:** 2026-06-11
 **Feature:** Phase 5A — Style DNA Engine
 **Files Changed:**

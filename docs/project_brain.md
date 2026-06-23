@@ -92,6 +92,7 @@ Behavior:
 - Phase 4A Foundation Contracts: Creator Intent Engine contract, Project Schema Dart models, AI Director contract, and metadata extractor abstractions.
 - Phase 4B Video Intelligence Implementation: deterministic on-device scene, beat, speech, and highlight detection with `IntelligenceReport` aggregation.
 - Phase 5A Style DNA Engine: deterministic creator-style extraction from finished edits into reusable `StyleDNA` profiles.
+- Phase 5B Style DNA Influence: deterministic mapping of `StyleDNA` to `StyleBiasMatrix` influencing `AIDirectorEngine` heuristic scaling and generation constraints without directly mutating the timeline.
 
 ## 9. Features In Progress
 - Real backend API contract for mobile app integration is not implemented yet.

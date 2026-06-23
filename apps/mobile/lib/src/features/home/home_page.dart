@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../design/design_system.dart';
-import '../dev_dashboard/dev_dashboard_page.dart';
+import '../../design_system/design_system.dart';
 import '../project_management/presentation/project_management_provider.dart';
-import 'home_models.dart';
-import 'home_widgets.dart';
 
-/// Home screen for the Vexora creator experience.
-///
-/// This screen uses mock data only and is built with reusable feature widgets.
+/// Premium AI-native Home Dashboard — Phase 6C
+/// Replaces the old developer-style home with a Linear/Notion-inspired layout.
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({Key? key}) : super(key: key);
 
@@ -17,91 +13,35 @@ class HomePage extends ConsumerStatefulWidget {
   ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends ConsumerState<HomePage> {
-  int _selectedIndex = 0;
+class _HomePageState extends ConsumerState<HomePage>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _heroController;
+  late Animation<double> _heroFade;
+  late Animation<Offset> _heroSlide;
 
   @override
-  Widget build(BuildContext context) {
-    final isWide = MediaQuery.of(context).size.width > 720;
-
-    return Scaffold(
-      backgroundColor: VexoraColors.background,
-      body: Container(
-        decoration: BoxDecoration(gradient: VexoraColors.ambientGradient),
-        child: SafeArea(
-          child: CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: VexoraSpacing.lg, vertical: VexoraSpacing.md),
-                sliver: SliverToBoxAdapter(child: _buildTopSection()),
-              ),
-              SliverPadding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: VexoraSpacing.lg),
-                sliver: SliverToBoxAdapter(
-                    child: const SizedBox(height: VexoraSpacing.lg)),
-              ),
-              SliverPadding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: VexoraSpacing.lg),
-                sliver: SliverToBoxAdapter(child: _buildQuickAiSection()),
-              ),
-              SliverPadding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: VexoraSpacing.lg),
-                sliver: SliverToBoxAdapter(
-                    child: const SizedBox(height: VexoraSpacing.lg)),
-              ),
-              SliverPadding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: VexoraSpacing.lg),
-                sliver: SliverToBoxAdapter(child: _buildProjectsSection()),
-              ),
-              SliverPadding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: VexoraSpacing.lg),
-                sliver: SliverToBoxAdapter(
-                    child: const SizedBox(height: VexoraSpacing.lg)),
-              ),
-              SliverPadding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: VexoraSpacing.lg),
-                sliver: SliverToBoxAdapter(child: _buildTemplatesSection()),
-              ),
-              SliverPadding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: VexoraSpacing.lg),
-                sliver: SliverToBoxAdapter(
-                    child: const SizedBox(height: VexoraSpacing.lg)),
-              ),
-              SliverPadding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: VexoraSpacing.lg),
-                sliver: SliverToBoxAdapter(child: _buildAiToolsSection(isWide)),
-              ),
-              SliverPadding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: VexoraSpacing.lg),
-                sliver: SliverToBoxAdapter(
-                    child: const SizedBox(height: VexoraSpacing.lg)),
-              ),
-              SliverPadding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: VexoraSpacing.lg),
-                sliver: SliverToBoxAdapter(child: _buildCommunitySection()),
-              ),
-              SliverToBoxAdapter(child: const SizedBox(height: 120)),
-            ],
-          ),
-        ),
-      ),
-      bottomNavigationBar: HomeBottomNavigation(
-        selectedIndex: _selectedIndex,
-        onChanged: (index) => setState(() => _selectedIndex = index),
-      ),
+  void initState() {
+    super.initState();
+    _heroController = AnimationController(
+      vsync: this,
+      duration: VexoraAnimations.slow,
     );
+    _heroFade = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _heroController, curve: VexoraAnimations.smoothCurve),
+    );
+    _heroSlide = Tween<Offset>(
+      begin: const Offset(0, 0.06),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _heroController, curve: VexoraAnimations.smoothCurve),
+    );
+    _heroController.forward();
+  }
+
+  @override
+  void dispose() {
+    _heroController.dispose();
+    super.dispose();
   }
 
   Future<void> _createProject() async {
@@ -111,313 +51,484 @@ class _HomePageState extends ConsumerState<HomePage> {
     if (mounted) context.push('/import');
   }
 
-  Widget _buildTopSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ─── Developer Dashboard entry ─────────────────────────────────
-        GestureDetector(
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const DevDashboardPage()),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: VexoraColors.background,
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(child: _buildHeroHeader()),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: VexoraSpacing.lg, vertical: VexoraSpacing.md),
+            sliver: SliverToBoxAdapter(child: _buildQuickActions()),
           ),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            margin: const EdgeInsets.only(bottom: VexoraSpacing.md),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [Color(0xFF1C122C), Color(0xFF12121A)],
-              ),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                  color: Color(0xFF7000FF).withOpacity(0.5), width: 1.2),
-              boxShadow: [
-                BoxShadow(
-                  color: Color(0xFF7000FF).withOpacity(0.18),
-                  blurRadius: 18,
-                  spreadRadius: 0,
-                ),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: VexoraSpacing.lg),
+            sliver: SliverToBoxAdapter(child: _buildSectionHeader(
+              'Recent Projects',
+              'Continue where you left off',
+              onViewAll: () => context.go('/projects'),
+            )),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: VexoraSpacing.lg, vertical: VexoraSpacing.sm),
+            sliver: SliverToBoxAdapter(child: _buildRecentProjects()),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: VexoraSpacing.lg),
+            sliver: SliverToBoxAdapter(child: _buildSectionHeader(
+              'AI Insights',
+              'Recommendations from your AI Director',
+            )),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: VexoraSpacing.lg, vertical: VexoraSpacing.sm),
+            sliver: SliverToBoxAdapter(child: _buildAiInsights()),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: VexoraSpacing.lg),
+            sliver: SliverToBoxAdapter(child: _buildSectionHeader(
+              'Trending Styles',
+              'Most copied in the last 24 hours',
+              onViewAll: () => context.go('/marketplace'),
+            )),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: VexoraSpacing.lg, vertical: VexoraSpacing.sm),
+            sliver: SliverToBoxAdapter(child: _buildTrendingStyles()),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+        ],
+      ),
+    );
+  }
+
+  // ─────────────────────────────── Hero ───────────────────────────────
+
+  Widget _buildHeroHeader() {
+    return FadeTransition(
+      opacity: _heroFade,
+      child: SlideTransition(
+        position: _heroSlide,
+        child: Container(
+          padding: EdgeInsets.only(
+            top: MediaQuery.of(context).padding.top + VexoraSpacing.lg,
+            left: VexoraSpacing.lg,
+            right: VexoraSpacing.lg,
+            bottom: VexoraSpacing.lg,
+          ),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                VexoraColors.primary.withOpacity(0.08),
+                VexoraColors.background,
               ],
             ),
-            child: Row(
-              children: [
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: Color(0xFF7000FF).withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(10),
-                    border:
-                        Border.all(color: Color(0xFF7000FF).withOpacity(0.4)),
-                  ),
-                  child: const Icon(Icons.developer_mode_rounded,
-                      color: Color(0xFF9E54FF), size: 18),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Developer Dashboard',
-                          style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white)),
-                      Text('Visual Verification · All Features · Live Demo',
-                          style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 10,
-                              color: Color(0xFF9E9EA7))),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.arrow_forward_ios_rounded,
-                    color: Color(0xFF9E54FF), size: 14),
-              ],
-            ),
           ),
-        ),
-        // ─── Original top section ──────────────────────────────────────
-        Text('Good evening, creator',
-            style: VexoraTypography.heading1(VexoraColors.textPrimary)),
-        const SizedBox(height: VexoraSpacing.xs),
-        Text(
-          'Your studio is ready. Start a new reel or continue a project.',
-          style: VexoraTypography.body(VexoraColors.textSecondary),
-        ),
-        const SizedBox(height: VexoraSpacing.lg),
-        GlassContainer(
-          child: Column(
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Quick create',
-                  style: VexoraTypography.heading2(VexoraColors.textPrimary)),
-              const SizedBox(height: VexoraSpacing.sm),
-              Text('Jump into a new reel with one tap.',
-                  style: VexoraTypography.body(VexoraColors.textSecondary)),
-              const SizedBox(height: VexoraSpacing.lg),
-              Row(
-                children: [
-                  Expanded(
-                    child: VexoraButton(
-                      label: 'Create Reel',
-                      onPressed: _createProject,
-                      variant: ButtonVariant.primary,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _getGreeting(),
+                      style: VexoraTypography.caption.copyWith(
+                        color: VexoraColors.primary,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.8,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: VexoraSpacing.md),
-                  Expanded(
-                    child: VexoraButton(
-                      label: 'Preview Engine',
-                      onPressed: () => context.push('/preview'),
-                      variant: ButtonVariant.secondary,
+                    const SizedBox(height: 4),
+                    Text(
+                      'Your AI Studio',
+                      style: VexoraTypography.display,
                     ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Create, edit, and publish with AI-powered precision.',
+                      style: VexoraTypography.body,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: VexoraSpacing.md),
+              // Avatar / status indicator
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [VexoraColors.primary, VexoraColors.accent],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  const SizedBox(width: VexoraSpacing.sm),
-                  VexoraButton(
-                    label: 'Explore Templates',
-                    onPressed: () {},
-                    variant: ButtonVariant.secondary,
-                  ),
-                ],
+                  boxShadow: VexoraShadows.glowPrimary,
+                ),
+                child: const Icon(Icons.person, color: Colors.white, size: 22),
               ),
             ],
           ),
         ),
-      ],
+      ),
     );
   }
 
-  Widget _buildQuickAiSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const HomeSectionTitle(
-            title: 'Quick AI', subtitle: 'Describe what you want to create'),
-        const SizedBox(height: VexoraSpacing.md),
-        const HomePromptBar(),
-      ],
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'GOOD MORNING';
+    if (hour < 18) return 'GOOD AFTERNOON';
+    return 'GOOD EVENING';
+  }
+
+  // ─────────────────────────────── Quick Actions ───────────────────────────
+
+  Widget _buildQuickActions() {
+    final actions = [
+      _QuickAction(
+        label: 'New Project',
+        icon: Icons.add_circle_outline,
+        gradient: [VexoraColors.primary, const Color(0xFF9F7AFF)],
+        onTap: _createProject,
+      ),
+      _QuickAction(
+        label: 'Apply Style',
+        icon: Icons.auto_awesome,
+        gradient: [VexoraColors.accent, const Color(0xFF0099CC)],
+        onTap: () => context.push('/ai-playground'),
+      ),
+      _QuickAction(
+        label: 'Analyze Video',
+        icon: Icons.analytics_outlined,
+        gradient: [VexoraColors.success, const Color(0xFF00B36B)],
+        onTap: () => context.push('/intelligence'),
+      ),
+      _QuickAction(
+        label: 'Export',
+        icon: Icons.upload_outlined,
+        gradient: [VexoraColors.warning, const Color(0xFFE0A030)],
+        onTap: () => context.push('/export'),
+      ),
+    ];
+
+    return Row(
+      children: actions.map((a) {
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(right: VexoraSpacing.sm),
+            child: _QuickActionTile(action: a),
+          ),
+        );
+      }).toList(),
     );
   }
 
-  Widget _buildProjectsSection() {
+  // ─────────────────────────────── Recent Projects ───────────────────────────
+
+  Widget _buildRecentProjects() {
     final projectsAsync = ref.watch(projectManagementProvider);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        HomeSectionTitle(
-          title: 'Recent projects',
-          subtitle: 'Continue where you left off',
-          onViewAll: () => context.push('/projects'),
-        ),
-        const SizedBox(height: VexoraSpacing.md),
-        SizedBox(
-          height: 190,
-          child: projectsAsync.when(
-            data: (projects) {
-              if (projects.isEmpty) {
-                return Center(
-                  child: Text('No recent projects. Create one!',
-                      style: VexoraTypography.body(VexoraColors.textSecondary)),
-                );
-              }
-              final recent = projects.take(8).toList();
-              return ListView.separated(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                itemCount: recent.length,
-                separatorBuilder: (_, __) =>
-                    const SizedBox(width: VexoraSpacing.sm),
-                itemBuilder: (context, index) {
-                  final project = recent[index];
-                  return SizedBox(
-                    width: 260,
-                    child: HomeProjectCard(
-                      project: project,
-                      onTap: () async {
-                        await ref
-                            .read(projectManagementProvider.notifier)
-                            .openProject(project.id);
-                        if (context.mounted) context.push('/import');
-                      },
-                      onDelete: () {
-                        ref
-                            .read(projectManagementProvider.notifier)
-                            .deleteProject(project.id);
-                      },
-                    ),
-                  );
-                },
-              );
-            },
-            loading: () => const Center(
-                child: CircularProgressIndicator(color: VexoraColors.accent)),
-            error: (err, stack) => Center(
-                child: Text('Error: $err',
-                    style: const TextStyle(color: Colors.red))),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTemplatesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const HomeSectionTitle(
-            title: 'Trending templates',
-            subtitle: 'Launch your next reel fast'),
-        const SizedBox(height: VexoraSpacing.md),
-        SizedBox(
-          height: 280,
-          child: ListView.separated(
+    return SizedBox(
+      height: 175,
+      child: projectsAsync.when(
+        data: (projects) {
+          if (projects.isEmpty) {
+            return EmptyState(
+              icon: Icons.video_library_outlined,
+              title: 'No projects yet',
+              subtitle: 'Start by creating your first AI-powered video.',
+              actionLabel: 'Create Project',
+              onAction: _createProject,
+            );
+          }
+          return ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
-            itemCount: mockTemplates.length,
-            separatorBuilder: (_, __) =>
-                const SizedBox(width: VexoraSpacing.sm),
-            itemBuilder: (context, index) =>
-                HomeTemplateCard(template: mockTemplates[index]),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAiToolsSection(bool isWide) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const HomeSectionTitle(
-            title: 'AI tools', subtitle: 'Creator tools powered by mock logic'),
-        const SizedBox(height: VexoraSpacing.md),
-        GridView.builder(
-          itemCount: mockAiTools.length,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: isWide ? 3 : 1,
-            crossAxisSpacing: VexoraSpacing.md,
-            mainAxisSpacing: VexoraSpacing.md,
-            childAspectRatio: isWide ? 3.2 : 2.8,
-          ),
-          itemBuilder: (context, index) =>
-              HomeAiToolCard(tool: mockAiTools[index]),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCommunitySection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const HomeSectionTitle(
-            title: 'Community spotlight',
-            subtitle: 'Trending edits by Vexora creators'),
-        const SizedBox(height: VexoraSpacing.md),
-        SizedBox(
-          height: 220,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: 3,
+            itemCount: projects.length.clamp(0, 8),
             separatorBuilder: (_, __) =>
                 const SizedBox(width: VexoraSpacing.sm),
             itemBuilder: (context, index) {
-              final titles = [
-                'Cyberpunk Vibes',
-                'Travel Vlog',
-                'Fitness Promo'
-              ];
-              final creators = ['@neon_ninja', '@wanderlust', '@fit_guru'];
-              return Container(
-                width: 160,
-                decoration: BoxDecoration(
-                  color: VexoraColors.surfaceAlt,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: VexoraColors.border),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      height: 140,
-                      decoration: BoxDecoration(
-                        color: VexoraColors.accent.withOpacity(0.2),
-                        borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(16)),
-                      ),
-                      child: const Center(
-                          child: Icon(Icons.play_circle_fill,
-                              color: VexoraColors.accentSoft, size: 40)),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(titles[index],
-                              style: VexoraTypography.body(
-                                  VexoraColors.textPrimary)),
-                          Text(creators[index],
-                              style: VexoraTypography.caption(
-                                  VexoraColors.textSecondary)),
-                        ],
-                      ),
-                    ),
-                  ],
+              final project = projects[index];
+              return SizedBox(
+                width: 200,
+                child: ProjectCard(
+                  title: project.title,
+                  duration: '—',
+                  status: 'Draft',
+                  onTap: () async {
+                    await ref
+                        .read(projectManagementProvider.notifier)
+                        .openProject(project.id);
+                    if (mounted) context.push('/import');
+                  },
                 ),
               );
             },
+          );
+        },
+        loading: () => ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: 4,
+          separatorBuilder: (_, __) => const SizedBox(width: VexoraSpacing.sm),
+          itemBuilder: (_, __) => const SizedBox(
+            width: 200,
+            child: LoadingSkeleton(height: 175),
           ),
         ),
-      ],
+        error: (e, _) => Center(
+          child: Text('Error loading projects',
+              style: VexoraTypography.body),
+        ),
+      ),
     );
   }
+
+  // ─────────────────────────────── AI Insights ───────────────────────────
+
+  Widget _buildAiInsights() {
+    final insights = [
+      _Insight(
+        icon: Icons.lightbulb_outline,
+        title: 'Style DNA Active',
+        subtitle: 'Your editing pattern prefers fast cuts (avg 1.2s).',
+        color: VexoraColors.primary,
+      ),
+      _Insight(
+        icon: Icons.trending_up,
+        title: 'Peak Engagement',
+        subtitle: 'Your audience is most active at 7–9 PM.',
+        color: VexoraColors.success,
+      ),
+      _Insight(
+        icon: Icons.music_note_outlined,
+        title: 'Beat Sync Ready',
+        subtitle: 'Import audio to enable automatic beat-sync cuts.',
+        color: VexoraColors.accent,
+      ),
+    ];
+
+    return Column(
+      children: insights.map((i) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: VexoraSpacing.sm),
+          child: GlassPanel(
+            padding: const EdgeInsets.all(VexoraSpacing.md),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: i.color.withOpacity(0.12),
+                    borderRadius: VexoraRadius.mdBorder,
+                  ),
+                  child: Icon(i.icon, color: i.color, size: 18),
+                ),
+                const SizedBox(width: VexoraSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(i.title, style: VexoraTypography.bodyStrong),
+                      const SizedBox(height: 2),
+                      Text(i.subtitle, style: VexoraTypography.caption),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right,
+                    color: VexoraColors.textTertiary, size: 16),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // ─────────────────────────────── Trending Styles ───────────────────────────
+
+  Widget _buildTrendingStyles() {
+    final styles = [
+      _TrendStyle('Cinematic Dark', '@nova_cuts', 0.9, VexoraColors.primary, 2341),
+      _TrendStyle('Lofi Beats', '@chill.ai', 0.45, VexoraColors.accent, 1892),
+      _TrendStyle('Energy Rush', '@hyper_edit', 0.85, VexoraColors.warning, 3104),
+      _TrendStyle('Minimal White', '@clean.cuts', 0.3, VexoraColors.success, 987),
+    ];
+
+    return SizedBox(
+      height: 195,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: styles.length,
+        separatorBuilder: (_, __) => const SizedBox(width: VexoraSpacing.sm),
+        itemBuilder: (context, i) {
+          final s = styles[i];
+          return SizedBox(
+            width: 160,
+            child: StyleCard(
+              name: s.name,
+              creator: s.creator,
+              category: 'Trending',
+              energy: s.energy,
+              copyCount: s.copies,
+              accentColor: s.color,
+              onTap: () => context.go('/marketplace'),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ─────────────────────────────── Helpers ───────────────────────────
+
+  Widget _buildSectionHeader(String title, String subtitle,
+      {VoidCallback? onViewAll}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: VexoraSpacing.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: VexoraTypography.title),
+                const SizedBox(height: 2),
+                Text(subtitle, style: VexoraTypography.caption),
+              ],
+            ),
+          ),
+          if (onViewAll != null)
+            GestureDetector(
+              onTap: onViewAll,
+              child: Text(
+                'View all',
+                style: VexoraTypography.caption.copyWith(
+                  color: VexoraColors.primary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────── Quick Action Tile ───────────────────────────
+
+class _QuickAction {
+  final String label;
+  final IconData icon;
+  final List<Color> gradient;
+  final VoidCallback onTap;
+  const _QuickAction({
+    required this.label,
+    required this.icon,
+    required this.gradient,
+    required this.onTap,
+  });
+}
+
+class _QuickActionTile extends StatefulWidget {
+  final _QuickAction action;
+  const _QuickActionTile({required this.action});
+
+  @override
+  State<_QuickActionTile> createState() => _QuickActionTileState();
+}
+
+class _QuickActionTileState extends State<_QuickActionTile> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.action.onTap,
+        child: AnimatedContainer(
+          duration: VexoraAnimations.fast,
+          padding: const EdgeInsets.symmetric(
+            vertical: VexoraSpacing.md,
+            horizontal: VexoraSpacing.sm,
+          ),
+          decoration: BoxDecoration(
+            color: _hovered
+                ? VexoraColors.surfaceHighlight
+                : VexoraColors.surfaceElevated,
+            borderRadius: VexoraRadius.lgBorder,
+            border: Border.all(
+              color: _hovered
+                  ? widget.action.gradient[0].withOpacity(0.4)
+                  : VexoraColors.border,
+            ),
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: widget.action.gradient,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: VexoraRadius.mdBorder,
+                ),
+                child: Icon(widget.action.icon,
+                    color: Colors.white, size: 18),
+              ),
+              const SizedBox(height: VexoraSpacing.xs + 2),
+              Text(
+                widget.action.label,
+                style: VexoraTypography.caption
+                    .copyWith(color: VexoraColors.textSecondary),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────── Data models ───────────────────────────
+
+class _Insight {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  const _Insight({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+  });
+}
+
+class _TrendStyle {
+  final String name;
+  final String creator;
+  final double energy;
+  final Color color;
+  final int copies;
+  const _TrendStyle(
+      this.name, this.creator, this.energy, this.color, this.copies);
 }
